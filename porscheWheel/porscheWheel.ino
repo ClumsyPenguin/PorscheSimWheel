@@ -5,19 +5,23 @@
 //20.8.17
 
 #include <Keypad.h>
-
+#include <RotaryEncoder.h>
 #define ENABLE_PULLUPS
 #define NUMROTARIES 4
 #define NUMBUTTONS 24
-#define NUMROWS 4
+#define NUMROWS 5
 #define NUMCOLS 2
+
+#define PIN_IN1 17
+#define PIN_IN2 18
 
 
 byte buttons[NUMROWS][NUMCOLS] = {
   {0,1},
   {2,3},
   {4,5},
-  {6,7}
+  {6,7},
+  {8,9},
 };
 
 struct rotariesdef {
@@ -86,11 +90,11 @@ const unsigned char ttable[7][4] = {
 };
 #endif
 
-byte rowPins[NUMROWS] = {4,5,6,7}; 
+byte rowPins[NUMROWS] = {4,5,6,7,8}; 
 byte colPins[NUMCOLS] = {2,3}; 
 
 Keypad buttbx = Keypad( makeKeymap(buttons), rowPins, colPins, NUMROWS, NUMCOLS); 
-
+RotaryEncoder encoder(PIN_IN1, PIN_IN2, RotaryEncoder::LatchMode::TWO03);
 void setup() {
   Serial.begin(9600);
   rotary_init();
@@ -98,6 +102,18 @@ void setup() {
 
 void loop() { 
   CheckAllButtons();
+
+  static int pos = 0;
+  encoder.tick();
+
+  int newPos = encoder.getPosition();
+  if (pos != newPos) {
+    Serial.print("pos:");
+    Serial.print(newPos);
+    Serial.print(" dir:");
+    Serial.println((int)(encoder.getDirection()));
+    pos = newPos;
+  }
 }
 
 void CheckAllButtons(void) {
