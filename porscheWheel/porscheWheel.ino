@@ -29,7 +29,13 @@ Keypad buttbx = Keypad(makeKeymap(buttons), rowPins, colPins, NUMROWS, NUMCOLS);
 RotaryEncoder encoder1(PIN_IN1, PIN_IN2, RotaryEncoder::LatchMode::TWO03);
 RotaryEncoder encoder2(PIN_IN3, PIN_IN4, RotaryEncoder::LatchMode::TWO03);
 
+unsigned long buttonTimestamps[32] = {0};  // 32 buttons total
+bool buttonState[32] = {false};
+unsigned long threshold = 100;
+
 void setup() {
+  pinMode(12, INPUT_PULLUP);
+  pinMode(1, INPUT_PULLUP);
   pinMode(8, INPUT_PULLUP);
   pinMode(9, INPUT_PULLUP);
   pinMode(10, INPUT_PULLUP);
@@ -45,14 +51,37 @@ void setup() {
 void loop() { 
   checkAllButtons();
   checkAllEncoders();
-  // Read digital buttons and set joystick buttons
-  Joystick.button(1, !digitalRead(8));
-  Joystick.button(2, !digitalRead(9));
-  Joystick.button(3, !digitalRead(10));
-  Joystick.button(4, !digitalRead(11));
+
+  // Call the function for each button
+  checkButtonWithThreshold(1, !digitalRead(8));
+  checkButtonWithThreshold(2, !digitalRead(9));
+  checkButtonWithThreshold(3, !digitalRead(10));
+  checkButtonWithThreshold(4, !digitalRead(11));
+  checkButtonWithThreshold(27, !digitalRead(12));
+  checkButtonWithThreshold(28, !digitalRead(1));
 
   // Delay to limit the loop speed
   delay(50);
+}
+
+void checkButtonWithThreshold(int buttonNumber, bool currentState) {
+  unsigned long now = millis();
+  
+  if (currentState && !buttonState[buttonNumber]) {
+    if (now - buttonTimestamps[buttonNumber] > threshold) {
+      Joystick.button(buttonNumber, 1);
+      buttonState[buttonNumber] = true;
+    }
+  } else if (!currentState && buttonState[buttonNumber]) {
+    if (now - buttonTimestamps[buttonNumber] > threshold) {
+      Joystick.button(buttonNumber, 0);
+      buttonState[buttonNumber] = false;
+    }
+  }
+
+  if (currentState != buttonState[buttonNumber]) {
+    buttonTimestamps[buttonNumber] = now;
+  }
 }
 
 void checkAllButtons() {
